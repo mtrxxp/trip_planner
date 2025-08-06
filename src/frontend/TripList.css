@@ -32,3 +32,8 @@ button{
     cursor: pointer;
     margin-left: 5px;
 }
+.map{
+    width: 70%;
+    height: 400px;
+    margin: 2rem auto;
+}
