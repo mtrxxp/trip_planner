@@ -2,7 +2,7 @@ import { useState } from 'react';
 import TripForm from './TripForm';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './navbar.jsx';
-import Saved from './Saved.jsx';
+import TripList from './TripList.jsx';
 
 export default function App() {
 
@@ -11,7 +11,7 @@ export default function App() {
       <Navbar />
       <Routes>
         <Route path="/tripform" element={<TripForm />}></Route>
-        <Route path="/saved" element={<Saved />}></Route>
+        <Route path="/triplist" element={<TripList />}></Route>
       </Routes>
     </>
   )

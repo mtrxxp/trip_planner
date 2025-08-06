@@ -12,7 +12,7 @@ export default function Navbar(){
                     <Link to="/tripform">Make a trip</Link>
                 </li>
                 <li>
-                    <Link to="/saved">Saved</Link>
+                    <Link to="/triplist">History</Link>
                 </li>
             </ul>
         </nav>

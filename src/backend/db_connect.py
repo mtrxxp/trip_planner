@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import date
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
@@ -21,6 +21,13 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 class Trip(Base):
     __tablename__ = "trips"
@@ -53,6 +60,13 @@ def get_trips():
     trips = db.query(Trip).all()
     return trips
 
+class TripCreate(BaseModel):
+    city: str
+    start_date: date
+    end_date: date
+
+class TripUpdate(TripCreate):
+    pass
 
 @app.post("/trips/")
 def create_trip(trip: TripCreate):
@@ -77,3 +91,25 @@ def create_trip(trip: TripCreate):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
+@app.put("/trips/{trip_id}")
+def update_trip(trip_id: int, trip: TripUpdate):
+    db = SessionLocal()
+    db_trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not db_trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    db_trip.city = trip.city
+    db_trip.start_date = trip.start_date
+    db_trip.end_date = trip.end_date
+    db.commit()
+    db.refresh(db_trip)
+    return db_trip
+
+@app.delete("/trips/{trip_id}")
+def delete_trip(trip_id: int, db: Session = Depends(get_db)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    db.delete(trip)
+    db.commit()
+    return {"detail": "Trip deleted"}
