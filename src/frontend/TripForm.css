@@ -1,4 +1,4 @@
-h1{
+h1, h2{
     text-align: center;
     margin: 10px;
 }
@@ -22,4 +22,25 @@ label{
 button{
     font-size: 25px;
     padding: 10px;
+}
+table{
+    margin: auto;
+    margin-bottom: 30px;
+    border-collapse: collapse;
+    width: 80%,;
+    max-width: 600px;
+}
+th, td{
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f2f2f2;
+}
+th{
+    background-color: #f0f0f0;
+}
+.container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
 }

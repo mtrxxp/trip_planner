@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import date
+import requests
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -53,6 +54,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+OPENWEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
+@app.get("/weather/{city}")
+def get_weather(city: str):
+    url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OPENWEATHER_API_KEY}&units=metric"
+    response = requests.get(url)
+    if response.status_code != 200:
+        return {"error": "City not found"}
+    return response.json()
 
 @app.get("/trips/")
 def get_trips():

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './TripList.css';
+import { parseISO, isAfter, isBefore, isEqual } from 'date-fns';
 
 const TripList = () => {
   const [trips, setTrips] = useState([]);
@@ -9,6 +10,9 @@ const TripList = () => {
     start_date: '',
     end_date: ''
   });
+
+  const [selectedTripWeather, setSelectedTripWeather] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchTrips();
@@ -39,6 +43,13 @@ const TripList = () => {
     fetchTrips();
   };
 
+  const handleDelete = async (id) => {
+    await fetch(`http://localhost:8000/trips/${id}`, {
+      method: 'DELETE',
+    });
+    fetchTrips();
+  };
+
   const handleChange = (e) => {
     setFormData(prev => ({
       ...prev,
@@ -46,11 +57,49 @@ const TripList = () => {
     }));
   };
 
-  const handleDelete = async (id) => {
-    await fetch(`http://localhost:8000/trips/${id}`, {
-      method: 'DELETE',
-    });
-    fetchTrips();
+  const handleShowWeather = async (trip) => {
+    try {
+      const res = await fetch(`http://localhost:8000/weather/${trip.city}`);
+      const data = await res.json();
+
+      const start = parseISO(trip.start_date);
+      const end = parseISO(trip.end_date);
+
+      const dailyForecasts = {};
+
+      data.list.forEach((entry) => {
+        const [dateStr, timeStr] = entry.dt_txt.split(" ");
+        const date = parseISO(dateStr);
+        const hour = parseInt(timeStr.split(":")[0]);
+
+        if (
+          isEqual(date, start) ||
+          isEqual(date, end) ||
+          (isAfter(date, start) && isBefore(date, end))
+        ) {
+          const current = dailyForecasts[dateStr];
+          const diff = Math.abs(hour - 12);
+
+          if (!current || diff < Math.abs(parseInt(current.dt_txt.split(" ")[1].split(":")[0]) - 12)) {
+            dailyForecasts[dateStr] = entry;
+          }
+        }
+      });
+
+      const filtered = Object.values(dailyForecasts).sort((a, b) =>
+        a.dt_txt.localeCompare(b.dt_txt)
+      );
+
+      if (filtered.length === 0) {
+        setError("No forecast on this dates.");
+        setSelectedTripWeather(null);
+      } else {
+        setSelectedTripWeather({ city: trip.city, data: filtered });
+        setError(null);
+      }
+    } catch (err) {
+      setError("Error.");
+    }
   };
 
   return (
@@ -109,6 +158,7 @@ const TripList = () => {
                   <td>
                     <button onClick={() => handleEdit(trip)}>Edit</button>
                     <button onClick={() => handleDelete(trip.id)}>Delete</button>
+                    <button onClick={() => handleShowWeather(trip)}>Show Weather</button>
                   </td>
                 </>
               )}
@@ -116,6 +166,34 @@ const TripList = () => {
           ))}
         </tbody>
       </table>
+
+      {selectedTripWeather && (
+        <>
+          <h2>Weather in {selectedTripWeather.city}</h2>
+          <div className="container">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Temperature (°C)</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedTripWeather.data.map(entry => (
+                <tr key={entry.dt}>
+                  <td>{entry.dt_txt.split(' ')[0]}</td>
+                  <td>{entry.main.temp.toFixed(1)}</td>
+                  <td>{entry.weather[0].description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        </>
+      )}
+
+      {error && <p>{error}</p>}
     </div>
   );
 };
